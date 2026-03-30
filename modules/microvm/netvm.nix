@@ -10,6 +10,9 @@ let
   ueth-kmsip = "100.66.96.2/32";
   ueth-gwip = "192.168.101.254";
   ueth-ip = "192.168.101.200/24";
+  ntpHostName = "pmc-net-vm-ntp.local";
+  ntpIpPath = "/var/common/ip-address";
+  ntpHostsFile = "/etc/avahi/hosts";
 in
 {
   config = {
@@ -78,11 +81,19 @@ in
               <name>NTP Server</name>
               <service>
                 <type>_ntp._udp</type>
+                <host-name>${ntpHostName}</host-name>
                 <port>123</port>
               </service>
             </service-group>
           '';
         };
+      };
+
+      fmo-update-avahi-ntp = {
+        enable = true;
+        hostName = ntpHostName;
+        ipPath = ntpIpPath;
+        hostsFile = ntpHostsFile;
       };
 
       fmo-firewall = {

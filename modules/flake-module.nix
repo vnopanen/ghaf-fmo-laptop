@@ -28,6 +28,7 @@
     ];
     netvm-services.imports = [
       ./fmo/fmo-update-hostname
+      ./fmo/fmo-update-avahi-ntp
       ./fmo/fmo-firewall
     ];
   };
