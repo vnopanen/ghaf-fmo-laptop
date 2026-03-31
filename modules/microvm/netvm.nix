@@ -12,7 +12,6 @@ let
   ueth-ip = "192.168.101.200/24";
   ntpHostName = "pmc-net-vm-ntp.local";
   ntpIpPath = "/var/common/ip-address";
-  ntpHostsFile = "/etc/avahi/hosts";
 in
 {
   config = {
@@ -66,26 +65,17 @@ in
     services = {
       vnstat.enable = true;
 
+      resolved.settings.Resolve.MulticastDNS = false;
+
       avahi = {
         enable = true;
         nssmdns4 = true;
-        reflector = true;
+        reflector = false;
         publish = {
           enable = true;
+          userServices = true;
           domain = true;
           addresses = true;
-        };
-        extraServiceFiles = {
-          ntp = ''
-            <service-group>
-              <name>NTP Server</name>
-              <service>
-                <type>_ntp._udp</type>
-                <host-name>${ntpHostName}</host-name>
-                <port>123</port>
-              </service>
-            </service-group>
-          '';
         };
       };
 
@@ -93,7 +83,6 @@ in
         enable = true;
         hostName = ntpHostName;
         ipPath = ntpIpPath;
-        hostsFile = ntpHostsFile;
       };
 
       fmo-firewall = {

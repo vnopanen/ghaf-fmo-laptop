@@ -29,44 +29,47 @@ in
       type = types.path;
       default = "/var/common/ip-address";
     };
-    hostsFile = mkOption {
-      description = "Path to the Avahi hosts file";
-      type = types.path;
-      default = "/etc/avahi/hosts";
-    };
   };
 
   config = mkIf cfg.enable (
     let
       scriptPackage = pkgs.writeShellApplication {
-        name = "sync-avahi-ntp-host";
+        name = "publish-avahi-ntp";
         runtimeInputs = [
-          pkgs.coreutils
-          pkgs.diffutils
+          pkgs.avahi
           pkgs.gawk
           pkgs.ipcalc
-          pkgs.systemd
         ];
-        text = builtins.readFile ./sync-avahi-ntp-host.sh;
+        text = builtins.readFile ./publish-avahi-ntp.sh;
       };
     in
     {
       systemd = {
         paths.fmo-update-avahi-ntp = {
-          description = "Monitor the NTP IP address file for Avahi updates";
+          description = "Monitor the NTP IP address file for Avahi publisher restarts";
           wantedBy = [ "multi-user.target" ];
           pathConfig = {
             PathModified = [ cfg.ipPath ];
+            Unit = "fmo-update-avahi-ntp-restart.service";
           };
         };
 
         services.fmo-update-avahi-ntp = {
-          description = "Update the Avahi NTP host mapping";
+          description = "Publish the Avahi NTP host and service";
           enable = true;
           wantedBy = [ "multi-user.target" ];
+          after = [ "avahi-daemon.service" ];
+          serviceConfig = {
+            Type = "simple";
+            ExecStart = "${scriptPackage}/bin/publish-avahi-ntp --ip-path ${cfg.ipPath} --host-name ${cfg.hostName}";
+          };
+        };
+
+        services.fmo-update-avahi-ntp-restart = {
+          description = "Restart the Avahi NTP publisher after IP address changes";
           serviceConfig = {
             Type = "oneshot";
-            ExecStart = "${scriptPackage}/bin/sync-avahi-ntp-host --ip-path ${cfg.ipPath} --hosts-file ${cfg.hostsFile} --host-name ${cfg.hostName}";
+            ExecStart = "${pkgs.systemd}/bin/systemctl restart fmo-update-avahi-ntp.service";
           };
         };
       };
